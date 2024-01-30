@@ -1,7 +1,17 @@
+locals {
+  s3_bucket_configs = [
+    for env in var.environments : {
+      s3_bucket_name = "my-s3-bucket-${env}"
+      s3_policy_name = "s3-policy-${env}"
+      s3_policy_arn  = "arn:aws:s3:::my-s3-bucket-${env}/*"
+    }
+  ]
+}
 
 # Create AWS Bucket in the AWS US region
 resource "aws_s3_bucket" "web_buckets" {
-  bucket   = "test-bucket01821212"
+  for_each = { for config in local.s3_bucket_configs : config.s3_bucket_name => config }
+  bucket   = "${each.value.s3_bucket_name}-${timestamp()}"
   provider = aws.us
 
   tags = {
@@ -9,11 +19,11 @@ resource "aws_s3_bucket" "web_buckets" {
   }
 }
 
-
 # Allow EC2 Instances to Read/Write within S3 Bucket
-
 resource "aws_s3_bucket_policy" "web_buckets" {
-  bucket = aws_s3_bucket.web_buckets.id
+  for_each = aws_s3_bucket.web_buckets
+
+  bucket = each.value.id
 
   policy = <<POLICY
 {
@@ -29,7 +39,7 @@ resource "aws_s3_bucket_policy" "web_buckets" {
         "s3:PutObject"
       ],
       "Resource": [
-	"${aws_s3_bucket.web_buckets.arn}/*"
+        "${each.value.arn}/*"
       ]
     }
   ]
@@ -39,9 +49,7 @@ POLICY
 
 # Set S3 Bucket to be private
 resource "aws_s3_bucket_acl" "example" {
-  depends_on = [aws_s3_bucket.web_buckets]
-
-  bucket = aws_s3_bucket.web_buckets.id
-  acl    = "private"
+  for_each = aws_s3_bucket.web_buckets
+  bucket   = each.value.id
+  acl      = "private"
 }
-
