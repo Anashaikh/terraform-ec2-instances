@@ -42,7 +42,7 @@ resource "aws_vpc" "main" {
   }
 }
 
-
+# Create Subnet
 resource "aws_subnet" "main" {
   for_each = { for config in local.region_configs : config.provider_alias => config }
 
