@@ -58,7 +58,7 @@ resource "aws_subnet" "main" {
 }
 
 
-# Create EC2 instance for Production environment
+# Create EC2 instance for Testing & Production environment
 
 resource "aws_instance" "windows-server" {
   for_each                    = { for config in local.region_configs : config.provider_alias => config }
